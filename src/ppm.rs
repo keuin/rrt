@@ -1,0 +1,152 @@
+use std::fs::OpenOptions;
+use std::io;
+use std::io::Write;
+use std::path::Path;
+use crate::ppm::Error::IOError;
+
+pub type ImageSize = u32;
+
+pub type ColorChannel = u8;
+
+const PIXEL_DEPTH: usize = 255;
+
+pub struct Image {
+    width: ImageSize,
+    height: ImageSize,
+    data: Vec<Pixel>,
+}
+
+#[derive(Copy, Clone)]
+pub struct Pixel {
+    pub r: ColorChannel,
+    pub g: ColorChannel,
+    pub b: ColorChannel,
+}
+
+impl Pixel {
+    pub fn zero() -> Self {
+        Pixel {
+            r: 0,
+            g: 0,
+            b: 0,
+        }
+    }
+
+    pub fn from_rgb(r: ColorChannel, g: ColorChannel, b: ColorChannel) -> Pixel {
+        if r as usize > PIXEL_DEPTH {
+            panic!("red channel out of bound")
+        }
+        if g as usize > PIXEL_DEPTH {
+            panic!("green channel out of bound")
+        }
+        if b as usize > PIXEL_DEPTH {
+            panic!("blue channel out of bound")
+        }
+        Pixel {
+            r,
+            g,
+            b,
+        }
+    }
+}
+
+pub struct ImageIterator<'a> {
+    x: ImageSize,
+    y: ImageSize,
+    n: ImageSize,
+    img: &'a Image,
+}
+
+impl<'a> Iterator for ImageIterator<'a> {
+    type Item = (ImageSize, ImageSize, &'a Pixel);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.y >= self.img.height {
+            return None;
+        }
+        let pixel = (self.x, self.y, self.img.data.get(self.n as usize)
+            .expect("expected pixel while iterating through image pixels"));
+        self.x += 1;
+        if self.x >= self.img.width {
+            self.x = 0;
+            self.y += 1;
+        }
+        self.n += 1;
+        Some(pixel)
+    }
+}
+
+impl Image {
+    pub fn new(width: ImageSize, height: ImageSize) -> Self {
+        Image {
+            width,
+            height,
+            data: vec![Pixel::zero(); (width * height) as usize],
+        }
+    }
+
+    pub fn iter(&self) -> ImageIterator {
+        ImageIterator {
+            x: 0,
+            y: 0,
+            n: 0,
+            img: &self,
+        }
+    }
+    pub fn save(&self, path: &Path) -> Result<(), Error> {
+        let mut file = OpenOptions::new().write(true).create(true).open(path)?;
+
+        // write file header
+        file.write(format!("P3\n{} {}\n{}\n", self.width, self.height, PIXEL_DEPTH).as_bytes())?;
+
+        // write pixels
+        for (x, y, pix) in self.iter() {
+            file.write(format!("{} {} {}\n", pix.r, pix.g, pix.b).as_bytes())?;
+        }
+
+        Ok(())
+    }
+
+    pub fn set_pixel(&mut self, x: ImageSize, y: ImageSize, pixel: Pixel) {
+        self.data[(x + y * self.height) as usize] = pixel;
+    }
+}
+
+#[derive(Debug)]
+pub enum Error {
+    IOError(io::Error)
+}
+
+impl From<io::Error> for Error {
+    fn from(value: io::Error) -> Self {
+        IOError(value)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+    use std::path::Path;
+    use crate::{ppm, testing};
+    use crate::ppm::{ColorChannel, ImageSize, Pixel};
+
+    fn test_ppm_1() {
+        const WIDTH: ImageSize = 100;
+        const HEIGHT: ImageSize = 100;
+        let mut img = ppm::Image::new(WIDTH, HEIGHT);
+        for x in 0..WIDTH {
+            for y in 0..HEIGHT {
+                img.set_pixel(x, y, Pixel::from_rgb(
+                    ((x as f64 / WIDTH as f64) * 255.0) as ColorChannel,
+                    ((y as f64 / HEIGHT as f64) * 255.0) as ColorChannel,
+                    0,
+                ));
+            }
+        }
+        let file_path = Path::new("/tmp/rrt_ut_test_ppm_1");
+        img.save(file_path).expect("write image file");
+        let expected = fs::read(testing::path("1.ppm")).expect("read test resource");
+        let actual = fs::read(file_path).expect("read test generated temp file");
+        assert_eq!(expected, actual, "unexpected generated ppm image file")
+    }
+}
