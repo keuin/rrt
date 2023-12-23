@@ -2,7 +2,9 @@ use crate::renderer::Renderer;
 use tracing::debug;
 
 mod ppm;
+mod ray;
 mod renderer;
+mod scene;
 mod testing;
 mod types;
 

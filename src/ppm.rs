@@ -42,6 +42,31 @@ impl Pixel {
     }
 }
 
+pub struct MutableImageIterator<'a> {
+    x: ImageSize,
+    y: ImageSize,
+    n: ImageSize,
+    img: &'a mut Image,
+}
+
+impl<'a> Iterator for MutableImageIterator<'a> {
+    type Item = (ImageSize, ImageSize, &'a mut Pixel);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.y >= self.img.height {
+            return None;
+        }
+        let pixel = (self.x, self.y, &mut self.img.data[self.n as usize]);
+        self.x += 1;
+        if self.x >= self.img.width {
+            self.x = 0;
+            self.y += 1;
+        }
+        self.n += 1;
+        Some(pixel)
+    }
+}
+
 pub struct ImageIterator<'a> {
     x: ImageSize,
     y: ImageSize,
@@ -107,6 +132,19 @@ impl Image {
 
     pub fn set_pixel(&mut self, x: ImageSize, y: ImageSize, pixel: Pixel) {
         self.data[(x + y * self.height) as usize] = pixel;
+    }
+}
+
+impl<'a> IntoIterator for &mut Image {
+    type Item = (ImageSize, ImageSize, &'a mut Pixel);
+    type IntoIter = MutableImageIterator<'a>;
+    fn into_iter(self) -> Self::IntoIter {
+        MutableImageIterator {
+            x: 0,
+            y: 0,
+            n: 0,
+            img: self,
+        }
     }
 }
 
