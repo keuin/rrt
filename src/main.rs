@@ -4,6 +4,7 @@ use tracing::debug;
 mod ppm;
 mod renderer;
 mod testing;
+mod types;
 
 fn main() {
     tracing_subscriber::fmt::init();
