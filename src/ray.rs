@@ -1,7 +1,6 @@
-use crate::types::{Pixel, PositionVec};
+use crate::types::PositionVec;
 
 pub struct Ray {
-    pub color: Pixel,
     pub origin: PositionVec,
     pub direction: PositionVec,
 }

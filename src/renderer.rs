@@ -12,28 +12,35 @@ pub struct Renderer<T: Scene> {
 }
 
 impl<T: Scene> Renderer<T> {
-    pub fn render(&self) {
-        thread::scope(|s| {
+    pub fn render(&self, mut samples: usize) {
+        let (sender, receiver) = channel::<Image>();
+        thread::scope(move |s| {
             let thread_cnt = num_cpus::get();
             info!("Worker threads: {thread_cnt}");
-            let (sender, receiver) = channel::<Image>();
+            let samples_per_thread = samples / thread_cnt;
             for i in 0..thread_cnt {
                 let worker = Worker {
                     id: i,
                     renderer: &self,
                     ch: sender.clone(),
-                    iter_count: 0,
+                    iter_count: if i == thread_cnt - 1 {
+                        samples_per_thread + samples % thread_cnt
+                    } else {
+                        samples_per_thread
+                    },
                 };
                 s.spawn(move || worker.run());
+                samples -= samples_per_thread;
             }
-            drop(sender);
-            // TODO add SSAA, we just keep the first image and ignore all others for now
-            let image = receiver.recv().expect("expecting at least one image");
-            for _ in receiver {}
-            image
-                .save(Path::new("result.ppm"))
-                .expect("failed to save image file");
-        })
+            s.spawn(move || {
+                // TODO add SSAA, we just keep the first image and ignore all others for now
+                let image = receiver.recv().expect("expecting at least one image");
+                for _ in receiver {}
+                image
+                    .save(Path::new("result.ppm"))
+                    .expect("failed to save image file");
+            });
+        });
     }
 }
 
@@ -48,7 +55,7 @@ pub fn new_demo_renderer() -> Renderer<DemoSkyScene> {
             pixel_height: 0.125,
             focus_length: 1 as NumPosition,
         },
-        scene: DemoSkyScene{},
+        scene: DemoSkyScene {},
     }
 }
 
@@ -61,7 +68,10 @@ struct Worker<'a, T: Scene + Send + Sync> {
 
 impl<'a, T: Scene> Worker<'a, T> {
     fn run(&self) {
-        debug!("Worker started (id: {})", self.id);
+        debug!(
+            "Worker started (id: {}), iter_count: {}",
+            self.id, self.iter_count
+        );
         for _ in 0..self.iter_count {
             let scene = &self.renderer.scene;
             let camera = &self.renderer.camera;

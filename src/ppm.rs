@@ -1,9 +1,9 @@
 use crate::ppm::Error::IOError;
+use crate::types::Pixel;
 use std::fs::OpenOptions;
 use std::io;
 use std::io::Write;
 use std::path::Path;
-use crate::types::Pixel;
 
 pub type ImageSize = u32;
 
@@ -24,10 +24,8 @@ pub struct MutableImageIterator<'a> {
     img: &'a mut Image,
 }
 
-impl<'a> Iterator for MutableImageIterator<'a> {
-    type Item = (ImageSize, ImageSize, &'a mut Pixel);
-
-    fn next(&mut self) -> Option<Self::Item> {
+impl MutableImageIterator<'_> {
+    fn next(&mut self) -> Option<(ImageSize, ImageSize, &mut Pixel)> {
         if self.y >= self.img.height {
             return None;
         }
@@ -75,6 +73,13 @@ impl<'a> Iterator for ImageIterator<'a> {
 }
 
 impl Image {
+    pub fn get_width(&self) -> ImageSize {
+        self.width
+    }
+
+    pub fn get_height(&self) -> ImageSize {
+        self.height
+    }
     pub fn new(width: ImageSize, height: ImageSize) -> Self {
         Image {
             width,
@@ -106,20 +111,7 @@ impl Image {
     }
 
     pub fn set_pixel(&mut self, x: ImageSize, y: ImageSize, pixel: Pixel) {
-        self.data[(x + y * self.height) as usize] = pixel;
-    }
-}
-
-impl<'a> IntoIterator for &'a mut Image {
-    type Item = (ImageSize, ImageSize, &'a mut Pixel);
-    type IntoIter = MutableImageIterator<'a>;
-    fn into_iter(self) -> Self::IntoIter {
-        MutableImageIterator {
-            x: 0,
-            y: 0,
-            n: 0,
-            img: self,
-        }
+        self.data[(x + y * self.width) as usize] = pixel;
     }
 }
 
@@ -154,10 +146,10 @@ mod tests {
                 img.set_pixel(
                     x,
                     y,
-                    Pixel::from_rgb(
-                        ((x as f64 / WIDTH as f64) * 255.0) as ColorChannel,
-                        ((y as f64 / HEIGHT as f64) * 255.0) as ColorChannel,
-                        0,
+                    Pixel::from_rgb_normalized(
+                        x as f64 / WIDTH as f64,
+                        y as f64 / HEIGHT as f64,
+                        0.0,
                     ),
                 );
             }

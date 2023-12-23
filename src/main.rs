@@ -1,4 +1,3 @@
-use crate::renderer::Renderer;
 use tracing::debug;
 
 mod ppm;
@@ -12,5 +11,5 @@ fn main() {
     tracing_subscriber::fmt::init();
     debug!("Debug logging is enabled");
     let renderer = renderer::new_demo_renderer();
-    renderer.render();
+    renderer.render(1);
 }
