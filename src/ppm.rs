@@ -1,8 +1,8 @@
+use crate::ppm::Error::IOError;
 use std::fs::OpenOptions;
 use std::io;
 use std::io::Write;
 use std::path::Path;
-use crate::ppm::Error::IOError;
 
 pub type ImageSize = u32;
 
@@ -25,11 +25,7 @@ pub struct Pixel {
 
 impl Pixel {
     pub fn zero() -> Self {
-        Pixel {
-            r: 0,
-            g: 0,
-            b: 0,
-        }
+        Pixel { r: 0, g: 0, b: 0 }
     }
 
     pub fn from_rgb(r: ColorChannel, g: ColorChannel, b: ColorChannel) -> Pixel {
@@ -42,11 +38,7 @@ impl Pixel {
         if b as usize > PIXEL_DEPTH {
             panic!("blue channel out of bound")
         }
-        Pixel {
-            r,
-            g,
-            b,
-        }
+        Pixel { r, g, b }
     }
 }
 
@@ -64,8 +56,14 @@ impl<'a> Iterator for ImageIterator<'a> {
         if self.y >= self.img.height {
             return None;
         }
-        let pixel = (self.x, self.y, self.img.data.get(self.n as usize)
-            .expect("expected pixel while iterating through image pixels"));
+        let pixel = (
+            self.x,
+            self.y,
+            self.img
+                .data
+                .get(self.n as usize)
+                .expect("expected pixel while iterating through image pixels"),
+        );
         self.x += 1;
         if self.x >= self.img.width {
             self.x = 0;
@@ -114,7 +112,7 @@ impl Image {
 
 #[derive(Debug)]
 pub enum Error {
-    IOError(io::Error)
+    IOError(io::Error),
 }
 
 impl From<io::Error> for Error {
@@ -125,11 +123,11 @@ impl From<io::Error> for Error {
 
 #[cfg(test)]
 mod tests {
+    use crate::ppm::{ColorChannel, ImageSize, Pixel};
+    use crate::{ppm, testing};
     use std::fs;
     use std::path::Path;
     use tracing::info;
-    use crate::{ppm, testing};
-    use crate::ppm::{ColorChannel, ImageSize, Pixel};
     use tracing_test::traced_test;
 
     #[traced_test]
@@ -140,11 +138,15 @@ mod tests {
         let mut img = ppm::Image::new(WIDTH, HEIGHT);
         for x in 0..WIDTH {
             for y in 0..HEIGHT {
-                img.set_pixel(x, y, Pixel::from_rgb(
-                    ((x as f64 / WIDTH as f64) * 255.0) as ColorChannel,
-                    ((y as f64 / HEIGHT as f64) * 255.0) as ColorChannel,
-                    0,
-                ));
+                img.set_pixel(
+                    x,
+                    y,
+                    Pixel::from_rgb(
+                        ((x as f64 / WIDTH as f64) * 255.0) as ColorChannel,
+                        ((y as f64 / HEIGHT as f64) * 255.0) as ColorChannel,
+                        0,
+                    ),
+                );
             }
         }
         let path_actual = Path::new("/tmp/rrt_ut_test_ppm_1");
