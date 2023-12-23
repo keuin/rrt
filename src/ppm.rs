@@ -100,7 +100,7 @@ impl Image {
         file.write(format!("P3\n{} {}\n{}\n", self.width, self.height, PIXEL_DEPTH).as_bytes())?;
 
         // write pixels
-        for (x, y, pix) in self.iter() {
+        for (_, _, pix) in self.iter() {
             file.write(format!("{} {} {}\n", pix.r, pix.g, pix.b).as_bytes())?;
         }
 
@@ -127,9 +127,13 @@ impl From<io::Error> for Error {
 mod tests {
     use std::fs;
     use std::path::Path;
+    use tracing::info;
     use crate::{ppm, testing};
     use crate::ppm::{ColorChannel, ImageSize, Pixel};
+    use tracing_test::traced_test;
 
+    #[traced_test]
+    #[test]
     fn test_ppm_1() {
         const WIDTH: ImageSize = 100;
         const HEIGHT: ImageSize = 100;
@@ -143,10 +147,13 @@ mod tests {
                 ));
             }
         }
-        let file_path = Path::new("/tmp/rrt_ut_test_ppm_1");
-        img.save(file_path).expect("write image file");
-        let expected = fs::read(testing::path("1.ppm")).expect("read test resource");
-        let actual = fs::read(file_path).expect("read test generated temp file");
-        assert_eq!(expected, actual, "unexpected generated ppm image file")
+        let path_actual = Path::new("/tmp/rrt_ut_test_ppm_1");
+        let path_expected = testing::path("1.ppm");
+        img.save(path_actual).expect("write image file");
+        info!("Expected file: {:?}", path_expected);
+        info!("Temp file: {:?}", path_actual);
+        let expected = fs::read(path_expected).expect("read test resource");
+        let actual = fs::read(path_actual).expect("read test generated temp file");
+        assert_eq!(expected, actual, "unexpected generated ppm image file");
     }
 }
