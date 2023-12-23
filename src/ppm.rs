@@ -135,32 +135,41 @@ mod tests {
     use tracing::info;
     use tracing_test::traced_test;
 
-    #[traced_test]
-    #[test]
-    fn test_ppm_1() {
-        const WIDTH: ImageSize = 100;
-        const HEIGHT: ImageSize = 100;
-        let mut img = ppm::Image::new(WIDTH, HEIGHT);
-        for x in 0..WIDTH {
-            for y in 0..HEIGHT {
+    fn do_test_ppm_1(width: ImageSize, height: ImageSize) {
+        let mut img = ppm::Image::new(width, height);
+        for x in 0..width {
+            for y in 0..height {
                 img.set_pixel(
                     x,
                     y,
                     Pixel::from_rgb_normalized(
-                        x as f64 / WIDTH as f64,
-                        y as f64 / HEIGHT as f64,
+                        x as f64 / width as f64,
+                        y as f64 / height as f64,
                         0.0,
                     ),
                 );
             }
         }
-        let path_actual = Path::new("/tmp/rrt_ut_test_ppm_1");
-        let path_expected = testing::path("1.ppm");
+        let s = format!("/tmp/rrt_ut_test_ppm_1.{width}x{height}");
+        let path_actual = Path::new(&s);
+        let path_expected = testing::path(format!("1.{width}x{height}.ppm").as_str());
         img.save(path_actual).expect("write image file");
         info!("Expected file: {:?}", path_expected);
         info!("Temp file: {:?}", path_actual);
         let expected = fs::read(path_expected).expect("read test resource");
         let actual = fs::read(path_actual).expect("read test generated temp file");
         assert_eq!(expected, actual, "unexpected generated ppm image file");
+    }
+
+    #[traced_test]
+    #[test]
+    fn test_ppm_1_100x100() {
+        do_test_ppm_1(100, 100);
+    }
+
+    #[traced_test]
+    #[test]
+    fn test_ppm_1_300x200() {
+        do_test_ppm_1(300, 200);
     }
 }

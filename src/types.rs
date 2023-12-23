@@ -1,6 +1,5 @@
 use crate::ppm::ColorChannel;
 use nalgebra::Vector3;
-use num::{Float, FromPrimitive};
 use std::fmt::{Display, Formatter, Write};
 
 pub type NumColor = u8;
