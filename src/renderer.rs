@@ -1,6 +1,6 @@
 use crate::ppm::Image;
-use crate::scene::{Camera, DemoSkyScene, Scene};
-use crate::types::{NumPosition, PositionVec};
+use crate::scene::{AbsoluteSphereScene, Camera, DemoSkyScene, Scene};
+use crate::types::{NumPosition, Pixel, PositionVec};
 use std::path::Path;
 use std::sync::mpsc::{channel, Sender};
 use std::thread;
@@ -56,6 +56,25 @@ pub fn new_demo_renderer() -> Renderer<DemoSkyScene> {
             focus_length: 1 as NumPosition,
         },
         scene: DemoSkyScene {},
+    }
+}
+
+pub fn new_sphere_renderer() -> Renderer<AbsoluteSphereScene> {
+    Renderer {
+        camera: Camera {
+            pos: PositionVec::zeros(),
+            // wh_ratio: 0.0,
+            width: 640,
+            height: 480,
+            pixel_width: 1.0 / 256.0,
+            pixel_height: 1.0 / 256.0,
+            focus_length: 1 as NumPosition,
+        },
+        scene: AbsoluteSphereScene {
+            sphere_center: PositionVec::new(0.0, 0.0, -1.0),
+            sphere_radius: 0.5,
+            sphere_color: Pixel::black(),
+        },
     }
 }
 

@@ -128,7 +128,7 @@ impl From<io::Error> for Error {
 
 #[cfg(test)]
 mod tests {
-    use crate::ppm::{ColorChannel, ImageSize, Pixel};
+    use crate::ppm::{ImageSize, Pixel};
     use crate::{ppm, testing};
     use std::fs;
     use std::path::Path;

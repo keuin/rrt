@@ -84,3 +84,22 @@ impl Scene for DemoSkyScene {
 
 /// Immutable data describing the object space.
 pub struct WorldScene {}
+
+pub struct AbsoluteSphereScene {
+    pub(crate) sphere_center: PositionVec,
+    pub(crate) sphere_radius: NumPosition,
+    pub(crate) sphere_color: Pixel,
+}
+
+impl Scene for AbsoluteSphereScene {
+    fn get_color(&self, ray: Ray) -> Pixel {
+        let oc = ray.origin - self.sphere_center;
+        let a = ray.direction.norm_squared();
+        let b = 2.0 * oc.dot(&ray.direction);
+        let c = oc.norm_squared() - self.sphere_radius * self.sphere_radius;
+        if b * b > 4.0 * a * c {
+            return self.sphere_color.clone();
+        }
+        return DemoSkyScene {}.get_color(ray);
+    }
+}
