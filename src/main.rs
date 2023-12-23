@@ -11,6 +11,6 @@ mod types;
 fn main() {
     tracing_subscriber::fmt::init();
     debug!("Debug logging is enabled");
-    let mut renderer = Renderer::new();
+    let renderer = renderer::new_demo_renderer();
     renderer.render();
 }

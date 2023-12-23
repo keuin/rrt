@@ -11,22 +11,8 @@ pub struct Renderer<T: Scene> {
     scene: T,
 }
 
-impl Renderer<DemoSkyScene> {
-    pub fn new() -> Self {
-        Renderer {
-            camera: Camera {
-                pos: PositionVec::zero(),
-                // wh_ratio: 0.0,
-                width: 640,
-                height: 480,
-                pixel_width: 0.125,
-                pixel_height: 0.125,
-                focus_length: 1 as NumPosition,
-            },
-            scene: DemoSkyScene {},
-        }
-    }
-    pub fn render(&mut self) {
+impl<T: Scene> Renderer<T> {
+    pub fn render(&self) {
         thread::scope(|s| {
             let thread_cnt = num_cpus::get();
             info!("Worker threads: {thread_cnt}");
@@ -51,7 +37,22 @@ impl Renderer<DemoSkyScene> {
     }
 }
 
-struct Worker<'a, T: Scene> {
+pub fn new_demo_renderer() -> Renderer<DemoSkyScene> {
+    Renderer {
+        camera: Camera {
+            pos: PositionVec::zeros(),
+            // wh_ratio: 0.0,
+            width: 640,
+            height: 480,
+            pixel_width: 0.125,
+            pixel_height: 0.125,
+            focus_length: 1 as NumPosition,
+        },
+        scene: DemoSkyScene{},
+    }
+}
+
+struct Worker<'a, T: Scene + Send + Sync> {
     id: usize,
     renderer: &'a Renderer<T>,
     ch: Sender<Image>,

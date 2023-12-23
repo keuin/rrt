@@ -3,6 +3,7 @@ use std::fs::OpenOptions;
 use std::io;
 use std::io::Write;
 use std::path::Path;
+use crate::types::Pixel;
 
 pub type ImageSize = u32;
 
@@ -14,32 +15,6 @@ pub struct Image {
     width: ImageSize,
     height: ImageSize,
     data: Vec<Pixel>,
-}
-
-#[derive(Copy, Clone)]
-pub struct Pixel {
-    pub r: ColorChannel,
-    pub g: ColorChannel,
-    pub b: ColorChannel,
-}
-
-impl Pixel {
-    pub fn zero() -> Self {
-        Pixel { r: 0, g: 0, b: 0 }
-    }
-
-    pub fn from_rgb(r: ColorChannel, g: ColorChannel, b: ColorChannel) -> Pixel {
-        if r as usize > PIXEL_DEPTH {
-            panic!("red channel out of bound")
-        }
-        if g as usize > PIXEL_DEPTH {
-            panic!("green channel out of bound")
-        }
-        if b as usize > PIXEL_DEPTH {
-            panic!("blue channel out of bound")
-        }
-        Pixel { r, g, b }
-    }
 }
 
 pub struct MutableImageIterator<'a> {
@@ -104,7 +79,7 @@ impl Image {
         Image {
             width,
             height,
-            data: vec![Pixel::zero(); (width * height) as usize],
+            data: vec![Pixel::black(); (width * height) as usize],
         }
     }
 
@@ -124,7 +99,7 @@ impl Image {
 
         // write pixels
         for (_, _, pix) in self.iter() {
-            file.write(format!("{} {} {}\n", pix.r, pix.g, pix.b).as_bytes())?;
+            file.write(format!("{} {} {}\n", pix.red(), pix.green(), pix.blue()).as_bytes())?;
         }
 
         Ok(())
@@ -135,7 +110,7 @@ impl Image {
     }
 }
 
-impl<'a> IntoIterator for &mut Image {
+impl<'a> IntoIterator for &'a mut Image {
     type Item = (ImageSize, ImageSize, &'a mut Pixel);
     type IntoIter = MutableImageIterator<'a>;
     fn into_iter(self) -> Self::IntoIter {

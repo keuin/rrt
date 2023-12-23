@@ -20,8 +20,8 @@ pub struct Camera {
 }
 
 /// Scene describes how objects in the world is organized.
-pub trait Scene {
-    fn get_color(ray: Ray) -> Pixel {
+pub trait Scene: Send + Sync {
+    fn get_color(&self, ray: Ray) -> Pixel {
         todo!()
     }
 }
@@ -44,7 +44,7 @@ impl Camera {
                 0 as NumPosition,
             );
             let ray = Ray {
-                color: Pixel::zeros(),
+                color: Pixel::black(),
                 origin,
                 direction: pos_pixel - origin + bias,
             };
@@ -60,14 +60,14 @@ impl Camera {
             PositionVec::new(0 as NumPosition, 0 as NumPosition, -self.focus_length);
         let pos_left_upper_pixel = pos_sensor_center
             + PositionVec::new(
-                -(self.width * self.pixel_width / 2),
-                self.height * self.pixel_width / 2,
+                -((self.width as f64) * self.pixel_width / 2.0),
+                (self.height as f64) * self.pixel_width / 2.0,
                 0 as NumPosition,
             );
         let pixel_pos = pos_left_upper_pixel
             + PositionVec::new(
-                self.pixel_width * x,
-                -(self.pixel_height * y),
+                self.pixel_width * (x as f64),
+                -(self.pixel_height * (y as f64)),
                 0 as NumPosition,
             );
         pixel_pos
@@ -76,6 +76,9 @@ impl Camera {
 
 /// a sky scene for testing
 pub struct DemoSkyScene {}
+
+impl Scene for DemoSkyScene {
+}
 
 /// Immutable data describing the object space.
 pub struct WorldScene {}
