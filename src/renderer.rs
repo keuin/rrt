@@ -43,7 +43,7 @@ impl<T: Scene> Renderer<T> {
                 }
             }
             s.spawn(move || {
-                // TODO add SSAA, we just keep the first image and ignore all others for now
+                // TODO extract SSAA logic and bypass this code when SSAA is not enabled
                 let sample_factor = 1.0 / samples as f64;
                 let mut sum_image: Image<T::T> = Image::new(self.camera.width, self.camera.height);
                 let mut has_image = false;
@@ -144,7 +144,6 @@ impl<'a, T: Scene> Worker<'a, T> {
         for _ in 0..self.iter_count {
             let scene = &self.renderer.scene;
             let camera = &self.renderer.camera;
-            // TODO add SSAA
             let rnd_x: f64 = rng.gen();
             let rnd_y: f64 = rng.gen();
             let image = camera.get_image(scene, rnd_x, rnd_y);
