@@ -9,14 +9,17 @@ use std::sync::mpsc::{channel, Sender};
 use std::thread;
 use tracing::{debug, info};
 
-pub struct Renderer<T: Scene> {
+pub struct Renderer<T>
+where
+    T: Scene,
+{
     camera: Camera,
     scene: T,
 }
 
 impl<T: Scene> Renderer<T> {
     pub fn render(&self, mut samples: usize) {
-        let (sender, receiver) = channel::<Image>();
+        let (sender, receiver) = channel::<Image<T::T>>();
         thread::scope(move |s| {
             let thread_cnt = num_cpus::get();
             info!("Worker threads: {thread_cnt}");
@@ -47,7 +50,7 @@ impl<T: Scene> Renderer<T> {
     }
 }
 
-pub fn new_demo_renderer() -> Renderer<DemoSkyScene> {
+pub fn new_demo_renderer<T: Pixel>() -> Renderer<DemoSkyScene<T>> {
     Renderer {
         camera: Camera {
             pos: PositionVec::zeros(),
@@ -58,11 +61,11 @@ pub fn new_demo_renderer() -> Renderer<DemoSkyScene> {
             pixel_height: 0.125,
             focus_length: 1 as NumPosition,
         },
-        scene: DemoSkyScene {},
+        scene: DemoSkyScene::new(),
     }
 }
 
-pub fn new_sphere_renderer() -> Renderer<AbsoluteSphereScene> {
+pub fn new_sphere_renderer<T: Pixel>() -> Renderer<AbsoluteSphereScene<T>> {
     Renderer {
         camera: Camera {
             pos: PositionVec::zeros(),
@@ -73,15 +76,12 @@ pub fn new_sphere_renderer() -> Renderer<AbsoluteSphereScene> {
             pixel_height: 1.0 / 256.0,
             focus_length: 1 as NumPosition,
         },
-        scene: AbsoluteSphereScene {
-            sphere_center: PositionVec::new(0.0, 0.0, -1.0),
-            sphere_radius: 0.5,
-            sphere_color: Pixel::black(),
-        },
+        scene: AbsoluteSphereScene::new(PositionVec::new(0.0, 0.0, -1.0), 0.5, T::black()),
     }
 }
 
-pub fn new_norm_visualized_sphere_renderer() -> Renderer<NormVectorVisualizedSphereScene> {
+pub fn new_norm_visualized_sphere_renderer<T: Pixel>(
+) -> Renderer<NormVectorVisualizedSphereScene<T>> {
     Renderer {
         camera: Camera {
             pos: PositionVec::zeros(),
@@ -92,14 +92,13 @@ pub fn new_norm_visualized_sphere_renderer() -> Renderer<NormVectorVisualizedSph
             pixel_height: 1.0 / 256.0,
             focus_length: 1 as NumPosition,
         },
-        scene: NormVectorVisualizedSphereScene {
-            sphere_center: PositionVec::new(0.0, 0.0, -1.0),
-            sphere_radius: 0.5,
-        },
+        scene: NormVectorVisualizedSphereScene::new(PositionVec::new(0.0, 0.0, -1.0), 0.5),
     }
 }
 
-pub fn new_skied_world<'a>(objects: Vec<&'a dyn Hittable>) -> Renderer<SkiedWorld<'a>> {
+pub fn new_skied_world<'a, T: Pixel>(
+    objects: Vec<&'a dyn Hittable<T>>,
+) -> Renderer<SkiedWorld<'a, T>> {
     Renderer {
         camera: Camera {
             pos: PositionVec::zeros(),
@@ -117,7 +116,7 @@ pub fn new_skied_world<'a>(objects: Vec<&'a dyn Hittable>) -> Renderer<SkiedWorl
 struct Worker<'a, T: Scene + Send + Sync> {
     id: usize,
     renderer: &'a Renderer<T>,
-    ch: Sender<Image>,
+    ch: Sender<Image<T::T>>,
     iter_count: usize,
 }
 

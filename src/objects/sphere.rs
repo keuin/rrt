@@ -7,8 +7,8 @@ pub struct NormalVectorVisualizedSphere {
     pub radius: NumPosition,
 }
 
-impl Hittable for NormalVectorVisualizedSphere {
-    fn try_hit(&self, ray: &Ray, t1: Time, t2: Time) -> Option<HitEvent> {
+impl<T: Pixel> Hittable<T> for NormalVectorVisualizedSphere {
+    fn try_hit(&self, ray: &Ray, t1: Time, t2: Time) -> Option<HitEvent<T>> {
         let oc = ray.origin - self.center;
         let a = ray.direction.norm_squared();
         let b = 2.0 * oc.dot(&ray.direction);
@@ -34,7 +34,7 @@ impl Hittable for NormalVectorVisualizedSphere {
             hit_pos,
             surface_nv,
             t,
-            color: Pixel::from_rgb_normalized(color.x, color.y, color.z),
+            color: T::from_rgb_normalized(color.x, color.y, color.z),
         })
     }
 }

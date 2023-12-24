@@ -1,6 +1,6 @@
 use crate::objects::sphere::NormalVectorVisualizedSphere;
 use crate::scene::Hittable;
-use crate::types::PositionVec;
+use crate::types::{PixelF64, PositionVec};
 use tracing::debug;
 
 mod objects;
@@ -18,7 +18,7 @@ fn main() {
         center: PositionVec::new(0.0, 0.0, -1.0),
         radius: 0.5,
     };
-    let objects: Vec<&dyn Hittable> = vec![&sphere];
+    let objects: Vec<&dyn Hittable<PixelF64>> = vec![&sphere];
     let renderer = renderer::new_skied_world(objects);
     renderer.render(1);
 }

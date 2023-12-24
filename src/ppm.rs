@@ -11,21 +11,21 @@ pub type ColorChannel = u8;
 
 const PIXEL_DEPTH: usize = 255;
 
-pub struct Image {
+pub struct Image<T: Pixel> {
     width: ImageSize,
     height: ImageSize,
-    data: Vec<Pixel>,
+    data: Vec<T>,
 }
 
-pub struct MutableImageIterator<'a> {
-    iter_mut: slice::IterMut<'a, Pixel>,
+pub struct MutableImageIterator<'a, T: Pixel> {
+    iter_mut: slice::IterMut<'a, T>,
     width: ImageSize,
     x: ImageSize,
     y: ImageSize,
 }
 
-impl<'a> Iterator for MutableImageIterator<'a> {
-    type Item = (ImageSize, ImageSize, &'a mut Pixel);
+impl<'a, T: Pixel> Iterator for MutableImageIterator<'a, T> {
+    type Item = (ImageSize, ImageSize, &'a mut T);
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.iter_mut.next() {
@@ -43,15 +43,15 @@ impl<'a> Iterator for MutableImageIterator<'a> {
     }
 }
 
-pub struct ImageIterator<'a> {
+pub struct ImageIterator<'a, T: Pixel> {
     x: ImageSize,
     y: ImageSize,
     n: ImageSize,
-    img: &'a Image,
+    img: &'a Image<T>,
 }
 
-impl<'a> Iterator for ImageIterator<'a> {
-    type Item = (ImageSize, ImageSize, &'a Pixel);
+impl<'a, T: Pixel> Iterator for ImageIterator<'a, T> {
+    type Item = (ImageSize, ImageSize, &'a T);
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.y >= self.img.height {
@@ -75,7 +75,7 @@ impl<'a> Iterator for ImageIterator<'a> {
     }
 }
 
-impl Image {
+impl<T: Pixel> Image<T> {
     pub fn get_width(&self) -> ImageSize {
         self.width
     }
@@ -87,11 +87,11 @@ impl Image {
         Image {
             width,
             height,
-            data: vec![Pixel::black(); (width * height) as usize],
+            data: vec![T::black(); (width * height) as usize],
         }
     }
 
-    pub fn iter(&self) -> ImageIterator {
+    pub fn iter(&self) -> ImageIterator<T> {
         ImageIterator {
             x: 0,
             y: 0,
@@ -100,7 +100,7 @@ impl Image {
         }
     }
 
-    pub fn iter_mut(&mut self) -> MutableImageIterator {
+    pub fn iter_mut(&mut self) -> MutableImageIterator<T> {
         MutableImageIterator {
             iter_mut: self.data.iter_mut(),
             width: self.width,
@@ -110,6 +110,7 @@ impl Image {
     }
 
     pub fn save(&self, path: &Path) -> Result<(), Error> {
+        // TODO generalize this function to allow generate images with different color depth
         let mut file = OpenOptions::new().write(true).create(true).open(path)?;
 
         // write file header
@@ -117,13 +118,13 @@ impl Image {
 
         // write pixels
         for (_, _, pix) in self.iter() {
-            file.write(format!("{} {} {}\n", pix.red(), pix.green(), pix.blue()).as_bytes())?;
+            file.write(format!("{} {} {}\n", pix.red8(), pix.green8(), pix.blue8()).as_bytes())?;
         }
 
         Ok(())
     }
 
-    pub fn set_pixel(&mut self, x: ImageSize, y: ImageSize, pixel: Pixel) {
+    pub fn set_pixel(&mut self, x: ImageSize, y: ImageSize, pixel: T) {
         self.data[(x + y * self.width) as usize] = pixel;
     }
 }
@@ -142,6 +143,7 @@ impl From<io::Error> for Error {
 #[cfg(test)]
 mod tests {
     use crate::ppm::{ImageSize, Pixel};
+    use crate::types::PixelU8;
     use crate::{ppm, testing};
     use std::fs;
     use std::path::Path;
@@ -155,7 +157,7 @@ mod tests {
                 img.set_pixel(
                     x,
                     y,
-                    Pixel::from_rgb_normalized(
+                    PixelU8::from_rgb_normalized(
                         x as f64 / width as f64,
                         y as f64 / height as f64,
                         0.0,
