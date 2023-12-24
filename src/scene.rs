@@ -94,9 +94,6 @@ impl<T: Pixel> Scene for DemoSkyScene<T> {
     }
 }
 
-/// Immutable data describing the object space.
-pub struct WorldScene {}
-
 pub struct AbsoluteSphereScene<T: Pixel> {
     sphere_center: PositionVec,
     sphere_radius: NumPosition,
