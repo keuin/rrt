@@ -1,6 +1,7 @@
 use crate::ppm::{Image, ImageSize};
 use crate::ray::Ray;
-use crate::types::{NumPosition, Pixel, PositionVec};
+use crate::types::{NumPosition, Pixel, PositionVec, Time};
+use num_traits::float::FloatCore;
 
 /// Storing viewer's parameter.
 pub struct Camera {
@@ -122,5 +123,46 @@ impl Scene for NormVectorVisualizedSphereScene {
         let surface_normal = (ray.at(t) - self.sphere_center).normalize();
         let color = 0.5 * (surface_normal + PositionVec::new(1.0, 1.0, 1.0));
         Pixel::from_rgb_normalized(color.x, color.y, color.z)
+    }
+}
+
+/// the result of a hit
+pub struct HitEvent {
+    /// hit point position
+    pub hit_pos: PositionVec,
+    /// hit surface normal vector, pointing to outer surface
+    pub surface_nv: PositionVec,
+    /// hit time
+    pub t: Time,
+    /// color of the hit point
+    pub color: Pixel,
+}
+
+pub trait Hittable: Send + Sync {
+    /// test whether the given ray will hit this object in time range `t1` <= t < `t2`,
+    /// returning the smallest `t` that hits the object and satisfy the range constraint
+    fn try_hit(&self, ray: &Ray, t1: Time, t2: Time) -> Option<HitEvent>;
+}
+
+pub struct SkiedWorld<'a> {
+    pub(crate) objects: Vec<&'a dyn Hittable>,
+}
+
+impl<'a> Scene for SkiedWorld<'a> {
+    fn get_color(&self, ray: Ray) -> Pixel {
+        let mut last_hit: Option<HitEvent> = None;
+        let mut t_max = Time::infinity();
+        for obj in &self.objects {
+            if let Some(hit) = obj.try_hit(&ray, 0.0, t_max) {
+                if hit.t < t_max {
+                    t_max = hit.t;
+                    last_hit = Some(hit);
+                }
+            }
+        }
+        match last_hit {
+            None => DemoSkyScene {}.get_color(ray),
+            Some(hit) => hit.color,
+        }
     }
 }

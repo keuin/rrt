@@ -270,6 +270,7 @@ name = "rrt"
 version = "0.1.0"
 dependencies = [
  "nalgebra",
+ "num-traits",
  "num_cpus",
  "tracing",
  "tracing-subscriber",

@@ -1,6 +1,7 @@
 use crate::ppm::Image;
 use crate::scene::{
-    AbsoluteSphereScene, Camera, DemoSkyScene, NormVectorVisualizedSphereScene, Scene,
+    AbsoluteSphereScene, Camera, DemoSkyScene, Hittable, NormVectorVisualizedSphereScene, Scene,
+    SkiedWorld,
 };
 use crate::types::{NumPosition, Pixel, PositionVec};
 use std::path::Path;
@@ -95,6 +96,21 @@ pub fn new_norm_visualized_sphere_renderer() -> Renderer<NormVectorVisualizedSph
             sphere_center: PositionVec::new(0.0, 0.0, -1.0),
             sphere_radius: 0.5,
         },
+    }
+}
+
+pub fn new_skied_world<'a>(objects: Vec<&'a dyn Hittable>) -> Renderer<SkiedWorld<'a>> {
+    Renderer {
+        camera: Camera {
+            pos: PositionVec::zeros(),
+            // wh_ratio: 0.0,
+            width: 640,
+            height: 480,
+            pixel_width: 1.0 / 256.0,
+            pixel_height: 1.0 / 256.0,
+            focus_length: 1 as NumPosition,
+        },
+        scene: SkiedWorld { objects },
     }
 }
 
