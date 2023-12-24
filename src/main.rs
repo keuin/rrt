@@ -10,6 +10,6 @@ mod types;
 fn main() {
     tracing_subscriber::fmt::init();
     debug!("Debug logging is enabled");
-    let renderer = renderer::new_sphere_renderer();
+    let renderer = renderer::new_norm_visualized_sphere_renderer();
     renderer.render(1);
 }

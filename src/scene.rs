@@ -100,3 +100,27 @@ impl Scene for AbsoluteSphereScene {
         return DemoSkyScene {}.get_color(ray);
     }
 }
+
+pub struct NormVectorVisualizedSphereScene {
+    pub sphere_center: PositionVec,
+    pub sphere_radius: NumPosition,
+}
+
+impl Scene for NormVectorVisualizedSphereScene {
+    fn get_color(&self, ray: Ray) -> Pixel {
+        let oc = ray.origin - self.sphere_center;
+        let a = ray.direction.norm_squared();
+        let b = 2.0 * oc.dot(&ray.direction);
+        let c = oc.norm_squared() - self.sphere_radius * self.sphere_radius;
+        let delta = b * b - 4.0 * a * c;
+        if delta < 0.0 {
+            // does not hit the sphere
+            return DemoSkyScene {}.get_color(ray);
+        }
+        // hit time, the smaller root
+        let t = (-b - delta.sqrt()) / (2.0 * a);
+        let surface_normal = (ray.at(t) - self.sphere_center).normalize();
+        let color = 0.5 * (surface_normal + PositionVec::new(1.0, 1.0, 1.0));
+        Pixel::from_rgb_normalized(color.x, color.y, color.z)
+    }
+}

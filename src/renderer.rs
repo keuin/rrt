@@ -1,5 +1,7 @@
 use crate::ppm::Image;
-use crate::scene::{AbsoluteSphereScene, Camera, DemoSkyScene, Scene};
+use crate::scene::{
+    AbsoluteSphereScene, Camera, DemoSkyScene, NormVectorVisualizedSphereScene, Scene,
+};
 use crate::types::{NumPosition, Pixel, PositionVec};
 use std::path::Path;
 use std::sync::mpsc::{channel, Sender};
@@ -74,6 +76,24 @@ pub fn new_sphere_renderer() -> Renderer<AbsoluteSphereScene> {
             sphere_center: PositionVec::new(0.0, 0.0, -1.0),
             sphere_radius: 0.5,
             sphere_color: Pixel::black(),
+        },
+    }
+}
+
+pub fn new_norm_visualized_sphere_renderer() -> Renderer<NormVectorVisualizedSphereScene> {
+    Renderer {
+        camera: Camera {
+            pos: PositionVec::zeros(),
+            // wh_ratio: 0.0,
+            width: 640,
+            height: 480,
+            pixel_width: 1.0 / 256.0,
+            pixel_height: 1.0 / 256.0,
+            focus_length: 1 as NumPosition,
+        },
+        scene: NormVectorVisualizedSphereScene {
+            sphere_center: PositionVec::new(0.0, 0.0, -1.0),
+            sphere_radius: 0.5,
         },
     }
 }
