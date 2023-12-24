@@ -1,9 +1,9 @@
 use crate::ppm::Error::IOError;
 use crate::types::Pixel;
 use std::fs::OpenOptions;
-use std::io;
 use std::io::Write;
 use std::path::Path;
+use std::{io, slice};
 
 pub type ImageSize = u32;
 
@@ -18,25 +18,28 @@ pub struct Image {
 }
 
 pub struct MutableImageIterator<'a> {
+    iter_mut: slice::IterMut<'a, Pixel>,
+    width: ImageSize,
     x: ImageSize,
     y: ImageSize,
-    n: ImageSize,
-    img: &'a mut Image,
 }
 
-impl MutableImageIterator<'_> {
-    fn next(&mut self) -> Option<(ImageSize, ImageSize, &mut Pixel)> {
-        if self.y >= self.img.height {
-            return None;
+impl<'a> Iterator for MutableImageIterator<'a> {
+    type Item = (ImageSize, ImageSize, &'a mut Pixel);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.iter_mut.next() {
+            None => None,
+            Some(pixel) => {
+                let ret = (self.x, self.y, pixel);
+                self.x += 1;
+                if self.x >= self.width {
+                    self.x = 0;
+                    self.y += 1;
+                }
+                Some(ret)
+            }
         }
-        let pixel = (self.x, self.y, &mut self.img.data[self.n as usize]);
-        self.x += 1;
-        if self.x >= self.img.width {
-            self.x = 0;
-            self.y += 1;
-        }
-        self.n += 1;
-        Some(pixel)
     }
 }
 
@@ -96,6 +99,16 @@ impl Image {
             img: &self,
         }
     }
+
+    pub fn iter_mut(&mut self) -> MutableImageIterator {
+        MutableImageIterator {
+            iter_mut: self.data.iter_mut(),
+            width: self.width,
+            x: 0,
+            y: 0,
+        }
+    }
+
     pub fn save(&self, path: &Path) -> Result<(), Error> {
         let mut file = OpenOptions::new().write(true).create(true).open(path)?;
 

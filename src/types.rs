@@ -1,6 +1,6 @@
 use crate::ppm::ColorChannel;
 use nalgebra::Vector3;
-use std::fmt::{Display, Formatter, Write};
+use std::fmt::{Display, Formatter};
 
 pub type NumColor = u8;
 pub type NumColorRatio = f64;

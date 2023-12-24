@@ -32,21 +32,18 @@ impl Camera {
     /// rnd_x, rnd_y: 0 <= x < 1, random parameters for SSAA.
     pub fn get_image<T: Scene>(&self, scene: &T, rnd_x: f64, rnd_y: f64) -> Image {
         let mut image = Image::new(self.width, self.height);
-        for x in 0..image.get_width() {
-            for y in 0..image.get_height() {
-                // get a sample of those rays whose destination is current pixel
-                let pos_pixel = self.get_pixel_pos(x, y);
-                let origin = PositionVec::zeros();
-                let bias = PositionVec::new(
-                    rnd_x * self.pixel_width,
-                    -rnd_y * self.pixel_height,
-                    0 as NumPosition,
-                );
-                let direction = (pos_pixel - origin + bias).normalize() as PositionVec;
-                let ray = Ray { origin, direction };
-                let color = scene.get_color(ray);
-                image.set_pixel(x, y, color);
-            }
+        for (x, y, pixel) in image.iter_mut() {
+            // get a sample of those rays whose destination is current pixel
+            let pos_pixel = self.get_pixel_pos(x, y);
+            let origin = PositionVec::zeros();
+            let bias = PositionVec::new(
+                rnd_x * self.pixel_width,
+                -rnd_y * self.pixel_height,
+                0 as NumPosition,
+            );
+            let direction = (pos_pixel - origin + bias).normalize() as PositionVec;
+            let ray = Ray { origin, direction };
+            *pixel = scene.get_color(ray);
         }
         image
     }
