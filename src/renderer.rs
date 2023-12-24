@@ -4,6 +4,7 @@ use crate::scene::{
     SkiedWorld,
 };
 use crate::types::{NumPosition, Pixel, PositionVec};
+use rand::Rng;
 use std::path::Path;
 use std::sync::mpsc::{channel, Sender};
 use std::thread;
@@ -18,31 +19,43 @@ where
 }
 
 impl<T: Scene> Renderer<T> {
-    pub fn render(&self, mut samples: usize) {
+    pub fn render(&self, samples: usize) {
         let (sender, receiver) = channel::<Image<T::T>>();
         thread::scope(move |s| {
-            let thread_cnt = num_cpus::get();
-            info!("Worker threads: {thread_cnt}");
-            let samples_per_thread = samples / thread_cnt;
-            for i in 0..thread_cnt {
-                let worker = Worker {
-                    id: i,
-                    renderer: &self,
-                    ch: sender.clone(),
-                    iter_count: if i == thread_cnt - 1 {
-                        samples_per_thread + samples % thread_cnt
-                    } else {
-                        samples_per_thread
-                    },
-                };
-                s.spawn(move || worker.run());
-                samples -= samples_per_thread;
+            {
+                let mut samples = samples;
+                let thread_cnt = num_cpus::get();
+                info!("Worker threads: {thread_cnt}");
+                let samples_per_thread = samples / thread_cnt;
+                for i in 0..thread_cnt {
+                    let worker = Worker {
+                        id: i,
+                        renderer: &self,
+                        ch: sender.clone(),
+                        iter_count: if i == thread_cnt - 1 {
+                            samples_per_thread + samples % thread_cnt
+                        } else {
+                            samples_per_thread
+                        },
+                    };
+                    s.spawn(move || worker.run());
+                    samples -= samples_per_thread;
+                }
             }
             s.spawn(move || {
                 // TODO add SSAA, we just keep the first image and ignore all others for now
-                let image = receiver.recv().expect("expecting at least one image");
-                for _ in receiver {}
-                image
+                let sample_factor = 1.0 / samples as f64;
+                let mut sum_image: Image<T::T> = Image::new(self.camera.width, self.camera.height);
+                let mut has_image = false;
+                for mut image in receiver {
+                    image *= sample_factor;
+                    sum_image += image;
+                    has_image = true;
+                }
+                if !has_image {
+                    panic!("no image generated");
+                }
+                sum_image
                     .save(Path::new("result.ppm"))
                     .expect("failed to save image file");
             });
@@ -126,11 +139,15 @@ impl<'a, T: Scene> Worker<'a, T> {
             "Worker started (id: {}), iter_count: {}",
             self.id, self.iter_count
         );
+        // TODO make SSAA image generation deterministic
+        let mut rng = rand::thread_rng();
         for _ in 0..self.iter_count {
             let scene = &self.renderer.scene;
             let camera = &self.renderer.camera;
             // TODO add SSAA
-            let image = camera.get_image(scene, 0.0, 0.0);
+            let rnd_x: f64 = rng.gen();
+            let rnd_y: f64 = rng.gen();
+            let image = camera.get_image(scene, rnd_x, rnd_y);
             self.ch
                 .send(image)
                 .expect("failed to write worker result image to channel");

@@ -1,6 +1,7 @@
 use crate::ppm::ColorChannel;
 use nalgebra::Vector3;
 use std::fmt::{Display, Formatter};
+use std::ops::{Add, AddAssign, MulAssign};
 
 pub type NumColor = u8;
 pub type NumColorRatio = f64;
@@ -13,7 +14,9 @@ pub type PositionVec = Vector3<NumPosition>;
 
 // TODO this is a quick abstraction for 8bit image rendering.
 // Generalize the color depth in the future.
-pub trait Pixel: Send + Sync + Copy {
+pub trait Pixel:
+    Send + Sync + Copy + MulAssign<NumColorRatio> + Add<Self> + AddAssign<Self>
+{
     fn red(&self) -> NumColorRatio;
     fn green(&self) -> NumColorRatio;
     fn blue(&self) -> NumColorRatio;
@@ -49,6 +52,30 @@ impl AsRef<Vector3<NumColor>> for PixelU8 {
 impl Into<Vector3<NumColor>> for PixelU8 {
     fn into(self) -> Vector3<NumColor> {
         self.rgb
+    }
+}
+
+impl MulAssign<NumColorRatio> for PixelU8 {
+    fn mul_assign(&mut self, rhs: NumColorRatio) {
+        for v in self.rgb.iter_mut() {
+            *v = ((*v as f64) * rhs) as u8;
+        }
+    }
+}
+
+impl Add<Self> for PixelU8 {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        PixelU8 {
+            rgb: self.rgb + rhs.rgb,
+        }
+    }
+}
+
+impl AddAssign<Self> for PixelU8 {
+    fn add_assign(&mut self, rhs: Self) {
+        self.rgb += rhs.rgb;
     }
 }
 
@@ -121,6 +148,28 @@ impl PixelF64 {
         PixelF64 {
             rgb: Vector3::zeros(),
         }
+    }
+}
+
+impl MulAssign<NumColorRatio> for PixelF64 {
+    fn mul_assign(&mut self, rhs: NumColorRatio) {
+        self.rgb *= rhs;
+    }
+}
+
+impl Add<Self> for PixelF64 {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        PixelF64 {
+            rgb: self.rgb + rhs.rgb,
+        }
+    }
+}
+
+impl AddAssign<Self> for PixelF64 {
+    fn add_assign(&mut self, rhs: Self) {
+        self.rgb += rhs.rgb;
     }
 }
 

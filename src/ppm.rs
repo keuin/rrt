@@ -3,7 +3,7 @@ use crate::types::Pixel;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::Path;
-use std::{io, slice};
+use std::{io, ops, slice};
 
 pub type ImageSize = u32;
 
@@ -124,8 +124,38 @@ impl<T: Pixel> Image<T> {
         Ok(())
     }
 
+    fn index(&self, x: ImageSize, y: ImageSize) -> usize {
+        (x + y * self.width) as usize
+    }
+
     pub fn set_pixel(&mut self, x: ImageSize, y: ImageSize, pixel: T) {
-        self.data[(x + y * self.width) as usize] = pixel;
+        let i = self.index(x, y);
+        self.data[i] = pixel;
+    }
+
+    pub fn get_pixel(&mut self, x: ImageSize, y: ImageSize) -> T {
+        let i = self.index(x, y);
+        self.data[i]
+    }
+}
+
+impl<T: Pixel> ops::MulAssign<f64> for Image<T> {
+    fn mul_assign(&mut self, rhs: f64) {
+        for pixel in self.data.iter_mut() {
+            *pixel *= rhs;
+        }
+    }
+}
+
+impl<T: Pixel> ops::AddAssign<Self> for Image<T> {
+    fn add_assign(&mut self, rhs: Self) {
+        if self.data.len() != rhs.data.len() || self.width != rhs.width {
+            panic!("attempted to add two images with different shape");
+        }
+        let n = self.data.len();
+        for i in 0..n {
+            self.data[i] += rhs.data[i];
+        }
     }
 }
 

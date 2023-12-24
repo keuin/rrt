@@ -20,5 +20,5 @@ fn main() {
     };
     let objects: Vec<&dyn Hittable<PixelF64>> = vec![&sphere];
     let renderer = renderer::new_skied_world(objects);
-    renderer.render(1);
+    renderer.render(100);
 }
